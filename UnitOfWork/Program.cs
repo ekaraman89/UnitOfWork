@@ -58,31 +58,9 @@ public class UnitOfWork(IServiceProvider serviceProvider) : IUnitOfWork
     private IProductRepository? _productRepository;
     private ICustomerRepository? _customerRepository;
 
-    public IProductRepository ProductRepository
-    {
-        get
-        {
-            if (_productRepository == null)
-            {
-                _productRepository = serviceProvider.GetRequiredService<IProductRepository>();
-            }
+    public IProductRepository ProductRepository => _productRepository ??= serviceProvider.GetRequiredService<IProductRepository>();
 
-            return _productRepository;
-        }
-    }
-
-    public ICustomerRepository CustomerRepository
-    {
-        get
-        {
-            if (_customerRepository == null)
-            {
-                _customerRepository = serviceProvider.GetRequiredService<ICustomerRepository>();
-            }
-
-            return _customerRepository;
-        }
-    }
+    public ICustomerRepository CustomerRepository => _customerRepository ??= serviceProvider.GetRequiredService<ICustomerRepository>();
 
     public void SaveChanges()
     {
