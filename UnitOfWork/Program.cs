@@ -24,27 +24,37 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 
-app.MapGet("/weatherforecast", ([FromServices] IUnitOfWork unitOfWork) =>
+app.MapGet("/product", ([FromServices] IUnitOfWork unitOfWork) =>
     {
-        var b = unitOfWork.ProductRepository;
-        unitOfWork.SaveChanges();
+        using (unitOfWork)
+        {
+            unitOfWork.GetRepository<IProductRepository>().Hello();
+            unitOfWork.SaveChanges();
+        }
     })
     .WithName("GetWeatherForecast")
     .WithOpenApi();
 
-app.MapGet("/weatherforecast2", ([FromServices] IUnitOfWork unitOfWork) =>
+app.MapGet("/category", ([FromServices] IUnitOfWork unitOfWork) =>
     {
-        var b = unitOfWork.CustomerRepository;
-        unitOfWork.SaveChanges();
+        using (unitOfWork)
+        {
+            unitOfWork.GetRepository<ICustomerRepository>().Hello();
+            unitOfWork.SaveChanges();
+        }
     })
     .WithName("GetWeatherForecast2")
     .WithOpenApi();
 
-app.MapGet("/weatherforecast3", ([FromServices] IUnitOfWork unitOfWork) =>
+app.MapGet("/allOf", ([FromServices] IUnitOfWork unitOfWork) =>
     {
-        var b = unitOfWork.ProductRepository;
-        var c = unitOfWork.CustomerRepository;
-        unitOfWork.SaveChanges();
+        using (unitOfWork)
+        {
+            unitOfWork.GetRepository<IProductRepository>().Hello();
+            unitOfWork.GetRepository<ICustomerRepository>().Hello();
+
+            unitOfWork.SaveChanges();
+        }
     })
     .WithName("GetWeatherForecast33")
     .WithOpenApi();
@@ -55,20 +65,27 @@ app.Run();
 
 public class UnitOfWork(IServiceProvider serviceProvider) : IUnitOfWork
 {
-    private IProductRepository? _productRepository;
-    private ICustomerRepository? _customerRepository;
-
-    public IProductRepository ProductRepository => _productRepository ??= serviceProvider.GetRequiredService<IProductRepository>();
-
-    public ICustomerRepository CustomerRepository => _customerRepository ??= serviceProvider.GetRequiredService<ICustomerRepository>();
-
     public void SaveChanges()
     {
         Console.WriteLine("Saving changes");
     }
+
+    public TRepository GetRepository<TRepository>() where TRepository : IRepository
+    {
+        return serviceProvider.GetRequiredService<TRepository>();
+    }
+
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
+    }
 }
 
-public interface IProductRepository
+public interface IRepository
+{
+}
+
+public interface IProductRepository : IRepository
 {
     void Hello();
 }
@@ -86,10 +103,12 @@ public class ProductRepository : IProductRepository
     }
 }
 
-public interface ICustomerRepository
+
+public interface ICustomerRepository : IRepository
 {
     void Hello();
 }
+
 
 public class CustomerRepository : ICustomerRepository
 {
@@ -104,9 +123,8 @@ public class CustomerRepository : ICustomerRepository
     }
 }
 
-public interface IUnitOfWork
+public interface IUnitOfWork : IDisposable
 {
-    IProductRepository ProductRepository { get; }
-    ICustomerRepository CustomerRepository { get; }
+    public TRepository GetRepository<TRepository>() where TRepository : IRepository;
     void SaveChanges();
 }
